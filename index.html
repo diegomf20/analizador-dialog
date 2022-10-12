@@ -1,0 +1,109 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analisis dialogflow</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
+</head>
+<body>
+    <div id="app" class="container">
+        <input type="file" id="file-input" multiple/>
+        <h3 class="text-center">ANÁLISIS DIALOGFLOW <span class="badge text-bg-danger">{{ intents.length }} Intents</span></h3>
+        <pre id="contenido-archivo"></pre>
+        <div class="row mb-3">
+            <div class="col-6">
+                <input type="text" v-model="entities_search" class="form-control">
+            </div>
+            <div class="col-6">
+                <button class="btn btn-primary" @click="buscarEntidad()">
+                    Buscar
+                </button>
+            </div>
+        </div>
+        <h4>Lista de Intents</h4>
+        <ul class="list-group">
+            <li v-for="item in intents_for_entities" class="list-group-item d-flex justify-content-between align-items-center">
+              {{ item.name }}
+              <span class="badge bg-primary rounded-pill">{{ item.entities.length }} Entities</span>
+            </li>
+        </ul>
+    </div>
+
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <script>
+        // import { createApp } from 'vue'
+        const { createApp } = Vue
+
+        var app=createApp({
+            data() {
+                return {
+                    intents: [],
+                    entities_search: '',
+                    intents_for_entities: []
+                }
+            },
+            mounted(){
+                this.intents=JSON.parse(sessionStorage.intents ? sessionStorage.intents : '[]');
+            },
+            methods: {
+                buscarEntidad(){
+                    this.intents_for_entities=[];
+                    for (let i = 0; i < this.intents.length; i++) {
+                        let intent = this.intents[i];
+                        const found = intent.entities.find(element => element==this.entities_search)
+                        if (found!=undefined) {
+                            this.intents_for_entities.push(intent)
+                        }    
+                    }                    
+                }
+            }
+        }).mount('#app')
+        
+        var dialog_entidades = [];
+
+        function leerArchivo(e) {
+            for (let index = 0; index < e.target.files.length; index++) {
+                
+                var archivo = e.target.files[index];
+                if (archivo.name.indexOf("usersays")==-1) {
+                    
+                    if (!archivo) {
+                        return;
+                    }
+                    readJson(archivo);
+                }
+
+            }
+      }
+
+      function readJson(arch){
+            var lector = new FileReader();
+            lector.onload = function(e) {            
+                var contenido = e.target.result;
+                var contenido= JSON.parse(contenido);
+                //if (contenido.responses) {
+                //    var parameters=contenido.responses[0].parameters;
+                app.intents.push({
+                    name: arch.name.replace('.json',''),
+                    entities: contenido.responses ? contenido.responses[0].parameters.map(function(element) { return element.name}) : []
+                });
+                sessionStorage.intents= JSON.stringify(app.intents);
+            };
+            lector.readAsText(arch);
+      }
+      
+      function mostrarContenido(contenido) {
+        var elemento = document.getElementById('contenido-archivo');
+        elemento.innerHTML = contenido;
+      }
+      
+      document.getElementById('file-input')
+        .addEventListener('change', leerArchivo, false);
+      </script>
+</body>
+</html>

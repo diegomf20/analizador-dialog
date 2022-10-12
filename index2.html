@@ -1,0 +1,80 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    
+      <input type="file" id="file-input" multiple/>
+      <h3>Contenido del archivo:</h3>
+      <pre id="contenido-archivo"></pre>
+      <script>
+        var dialog_entidades = [];
+
+        function leerArchivo(e) {
+            for (let index = 0; index < e.target.files.length; index++) {
+                
+                var archivo = e.target.files[index];
+                if (archivo.name.indexOf("entries")!=-1) {
+                    
+                    if (!archivo) {
+                        return;
+                    }
+                    readJson(archivo);
+                }
+
+            }
+      }
+
+      function readJson(arch){
+
+            var lector = new FileReader();
+            lector.onload = function(e) {
+                            
+                var contenido = e.target.result;
+                var contenido= JSON.parse(contenido);
+                var parameters=contenido;
+                //console.log(contenido);
+                if (parameters.length>0) {
+                    var encontrado=false;
+                    for (let i = 0; i < parameters.length; i++) {
+                        const sinonimo = parameters[i].synonyms;
+                        for (let j = 0; j < sinonimo.length; j++) {
+                            const element = sinonimo[j];
+                            if (element.search('ENT001_YES')>-1) {
+                                encontrado=true;
+                                break;
+                            }
+                        }
+                        //const found = sinonimo.find(element => element.indexOf('ENT001_YES')!=-1)
+                        //console.log(found);
+                    }
+                    if (encontrado) {
+                        console.log(arch.name);
+                        //console.log(found);
+                        //dialog_entidades.push(contenido);
+                    }
+                    // console.log(dialog_entidades);
+                    mostrarContenido(contenido);
+                }else{
+                    
+                }
+            };
+            lector.readAsText(arch);
+      }
+      
+      function mostrarContenido(contenido) {
+        var elemento = document.getElementById('contenido-archivo');
+        elemento.innerHTML = contenido;
+      }
+      
+      document.getElementById('file-input')
+        .addEventListener('change', leerArchivo, false);
+      </script>
+</body>
+</html>
