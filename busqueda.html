@@ -25,12 +25,21 @@
             </div>
         </div>
         <h4>Lista de Intents</h4>
-        <ul class="list-group">
-            <li v-for="item in intents_for_entities" class="list-group-item d-flex justify-content-between align-items-center">
-              {{ item.name }}
-              <span class="badge bg-primary rounded-pill">{{ item.entities.length }} Entities</span>
-            </li>
-        </ul>
+        <div class="list-group">
+            <a v-for="item in intents_for_entities" class="list-group-item list-group-item-action flex-column align-items-start">
+              <div class="d-flex w-100 justify-content-between">
+                <h5 class="mb-1">{{ item.name }}</h5>
+                <small>{{ item.frases.length }} Frases</small>
+              </div>
+              <p class="mb-1">
+                <ul class="list-group">
+                    <li v-for="frase in item.frases" class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ frase }}
+                    </li>
+                </ul>
+              </p>
+            </a>
+        </div>
     </div>
 
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -48,16 +57,19 @@
                 }
             },
             mounted(){
-                this.intents=JSON.parse(sessionStorage.intents ? sessionStorage.intents : '[]');
+                this.intents=JSON.parse(sessionStorage.intents_frases ? sessionStorage.intents_frases : '[]');
             },
             methods: {
                 buscarEntidad(){
                     this.intents_for_entities=[];
                     for (let i = 0; i < this.intents.length; i++) {
                         let intent = this.intents[i];
-                        const found = intent.entities.find(element => element.toUpperCase() ==this.entities_search.toUpperCase())
-                        if (found!=undefined) {
-                            this.intents_for_entities.push(intent)
+                        const found = intent.frases.filter(element => element.toLowerCase().search(this.entities_search.toLowerCase())>-1)
+                        if (found.length>0 ) {
+                            this.intents_for_entities.push({
+                                name: intent.name,
+                                frases: found
+                            })
                         }    
                     }                    
                 }
@@ -67,10 +79,14 @@
         var dialog_entidades = [];
 
         function leerArchivo(e) {
+            if (e.target.files.length>0) {
+                sessionStorage.intents_frases= JSON.stringify([]);
+                app.intents=[];
+            }
             for (let index = 0; index < e.target.files.length; index++) {
                 
                 var archivo = e.target.files[index];
-                if (archivo.name.indexOf("usersays")==-1) {
+                if (archivo.name.indexOf("usersays")!=-1) {
                     
                     if (!archivo) {
                         return;
@@ -89,10 +105,10 @@
                 //if (contenido.responses) {
                 //    var parameters=contenido.responses[0].parameters;
                 app.intents.push({
-                    name: arch.name.replace('.json',''),
-                    entities: contenido.responses ? contenido.responses[0].parameters.map(function(element) { return element.name}) : []
+                    name: arch.name.replace('_usersays_es.json',''),
+                    frases: contenido ? contenido.map(function(frase) { return frase.data.map(palabra => palabra.text).join('')}) : []
                 });
-                sessionStorage.intents= JSON.stringify(app.intents);
+                sessionStorage.intents_frases= JSON.stringify(app.intents);
             };
             lector.readAsText(arch);
       }
